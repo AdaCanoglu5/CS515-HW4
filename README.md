@@ -29,8 +29,8 @@ bash scripts/populate_data.sh
 ## Part 1
 
 ```bash
-python -m part1.train --task lstm-reg --seed 0
-python -m part1.evaluate --task lstm-reg --seed 0
+python -m part1.train --task lstm-reg
+python -m part1.evaluate --task lstm-reg
 ```
 
 Tasks:
@@ -68,4 +68,13 @@ Full ablation suite:
 
 ```bash
 bash scripts/run_part2_ablations.sh
+```
+
+Part 2 post-training plots and sanity checks:
+
+```bash
+bash scripts/train_no_curriculum_if_missing.sh
+bash scripts/sweep_all_checkpoints.sh
+python -m part2.plot_comparison
+python -m part2.sanity
 ```

@@ -27,10 +27,13 @@ TASKS = {
 }
 
 
-def artifact_stem(task: str, seed: int, gamma: float | None = None) -> str:
-    """Stable file stem; turning tasks include gamma to avoid overwrites."""
+DEFAULT_SEED = 0
+
+
+def artifact_stem(task: str, gamma: float | None = None) -> str:
+    """Stable single-seed file stem; turning tasks include gamma to avoid overwrites."""
     _, _, kind = TASKS[task]
-    stem = f"part1_{task}_seed{seed}"
+    stem = f"part1_{task}"
     if kind == "turning" and gamma is not None:
         gamma_tag = str(gamma).replace(".", "p").replace("-", "m")
         stem = f"{stem}_gamma{gamma_tag}"
@@ -77,7 +80,6 @@ def run_epoch(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", choices=TASKS.keys(), required=True)
-    parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--tickers", nargs="+", default=DEFAULT_TICKERS)
     parser.add_argument("--cache-dir", default="data")
     parser.add_argument("--epochs", type=int, default=50)
@@ -92,7 +94,7 @@ def main() -> None:
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
 
-    set_seed(args.seed)
+    set_seed(DEFAULT_SEED)
     Path("checkpoints").mkdir(exist_ok=True)
     Path("results").mkdir(exist_ok=True)
     device = torch.device(args.device)
@@ -126,7 +128,7 @@ def main() -> None:
 
     optimizer = AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = CosineAnnealingLR(optimizer, T_max=args.epochs)
-    stem = artifact_stem(args.task, args.seed, args.gamma)
+    stem = artifact_stem(args.task, args.gamma)
     ckpt = Path("checkpoints") / f"{stem}.pt"
     log_path = Path("results") / f"{stem}.csv"
     best_val = float("inf")
@@ -149,7 +151,6 @@ def main() -> None:
                 {
                     "model_state": model.state_dict(),
                     "task": args.task,
-                    "seed": args.seed,
                     "gamma": args.gamma,
                     "hidden": args.hidden,
                     "num_layers": args.num_layers,

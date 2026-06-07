@@ -16,9 +16,11 @@ from part2.model import K, SIGMA2, FeedbackCodeSystem
 
 def build_from_checkpoint(path: Path, device: torch.device) -> FeedbackCodeSystem:
     ckpt = torch.load(path, map_location=device)
+    no_feedback = ckpt.get("no_feedback", ckpt.get("tag") == "no_feedback")
+    print(f"loaded ckpt {path}: t_rounds={ckpt.get('t_rounds')} no_feedback={no_feedback}")
     model = FeedbackCodeSystem(
         t_rounds=ckpt.get("t_rounds", 4),
-        no_feedback=ckpt.get("no_feedback", ckpt.get("tag") == "no_feedback"),
+        no_feedback=no_feedback,
     ).to(device)
     model.load_state_dict(ckpt["model_state"])
     model.eval()
@@ -61,16 +63,17 @@ def evaluate(
     }
 
 
-def summarize(values: list[dict[str, float]]) -> dict[str, float]:
-    out: dict[str, float] = {}
-    for key in values[0].keys():
-        arr = np.array([v[key] for v in values], dtype=np.float64)
-        out[f"{key}_mean"] = float(arr.mean())
-        out[f"{key}_std"] = float(arr.std(ddof=1)) if len(arr) > 1 else 0.0
-    return out
+def checkpoint_path_for_tag(tag: str) -> Path:
+    canonical = Path("checkpoints") / f"part2_{tag}.pt"
+    legacy = Path("checkpoints") / f"part2_{tag}_seed0.pt"
+    if canonical.exists():
+        return canonical
+    if legacy.exists():
+        return legacy
+    return canonical
 
 
-def save_snr_plot(model: FeedbackCodeSystem, device: torch.device, n_eval: int, batch: int) -> None:
+def save_snr_plot(model: FeedbackCodeSystem, device: torch.device, n_eval: int, batch: int, tag: str) -> None:
     variances = [0.05, 0.10, 0.15, 0.25, 0.35, 0.50]
     snr_db, bler = [], []
     for var in variances:
@@ -87,13 +90,19 @@ def save_snr_plot(model: FeedbackCodeSystem, device: torch.device, n_eval: int, 
     plt.grid(True, which="both", alpha=0.3)
     plt.legend()
     plt.tight_layout()
-    plt.savefig("results/bler_vs_snr.png", dpi=160)
+    plt.savefig(f"results/bler_vs_snr_{tag}.png", dpi=160)
+    plt.close()
+
+    with open(f"results/bler_vs_snr_{tag}.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["sigma2", "snr_db", "bler"])
+        for var, snr, err in zip(variances, snr_db, bler):
+            writer.writerow([var, snr, err])
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tag", default="main")
-    parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--n-eval", type=int, default=200_000)
     parser.add_argument("--batch", type=int, default=8192)
     parser.add_argument("--sigma2", type=float, default=SIGMA2)
@@ -103,25 +112,22 @@ def main() -> None:
 
     Path("results").mkdir(exist_ok=True)
     device = torch.device(args.device)
-    all_metrics = []
 
-    ckpt_path = Path("checkpoints") / f"part2_{args.tag}_seed{args.seed}.pt"
+    ckpt_path = checkpoint_path_for_tag(args.tag)
     model = build_from_checkpoint(ckpt_path, device)
     metrics = evaluate(model, math.sqrt(args.sigma2), n_eval=args.n_eval, batch=args.batch, device=device)
-    all_metrics.append(metrics)
-    print(f"seed={args.seed} {metrics}")
+    print(metrics)
 
-    summary = summarize(all_metrics)
     out_path = Path("results") / f"part2_{args.tag}.csv"
     with out_path.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=["metric", "value"])
         writer.writeheader()
-        for key, value in summary.items():
+        for key, value in metrics.items():
             writer.writerow({"metric": key, "value": value})
             print(f"{key}: {value}")
 
     if args.plot_snr:
-        save_snr_plot(model, device, args.n_eval, args.batch)
+        save_snr_plot(model, device, args.n_eval, args.batch, args.tag)
 
 
 if __name__ == "__main__":

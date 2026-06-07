@@ -26,11 +26,17 @@ def _load_model(args: argparse.Namespace, device: torch.device) -> torch.nn.Modu
     if args.checkpoint:
         ckpt_path = Path(args.checkpoint)
     else:
-        stem = artifact_stem(args.task, args.seed, args.gamma)
+        stem = artifact_stem(args.task, args.gamma)
         ckpt_path = Path("checkpoints") / f"{stem}.pt"
-        legacy = Path("checkpoints") / f"part1_{args.task}_seed{args.seed}.pt"
-        if not ckpt_path.exists() and legacy.exists():
-            ckpt_path = legacy
+        _, _, kind = TASKS[args.task]
+        legacy_paths = [Path("checkpoints") / f"part1_{args.task}_seed0.pt"]
+        if kind == "turning":
+            gamma_tag = str(args.gamma).replace(".", "p").replace("-", "m")
+            legacy_paths.insert(0, Path("checkpoints") / f"part1_{args.task}_seed0_gamma{gamma_tag}.pt")
+        for legacy in legacy_paths:
+            if not ckpt_path.exists() and legacy.exists():
+                ckpt_path = legacy
+                break
     ckpt = torch.load(ckpt_path, map_location=device)
     model = build_model(
         args.task,
@@ -96,7 +102,6 @@ def evaluate_turning(logits: np.ndarray, y: np.ndarray) -> dict[str, float]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", choices=TASKS.keys(), required=True)
-    parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--checkpoint")
     parser.add_argument("--tickers", nargs="+", default=DEFAULT_TICKERS)
     parser.add_argument("--cache-dir", default="data")
@@ -122,7 +127,7 @@ def main() -> None:
             raise ValueError(f"baseline shape {recent.shape} does not match targets {y.shape}")
         metrics = evaluate_regression(pred, y, recent)
 
-    stem = artifact_stem(args.task, args.seed, args.gamma)
+    stem = artifact_stem(args.task, args.gamma)
     out_path = Path("results") / f"{stem}_eval.csv"
     with out_path.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=["metric", "value"])

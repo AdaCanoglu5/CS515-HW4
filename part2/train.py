@@ -16,6 +16,8 @@ from torch.nn.utils import clip_grad_norm_
 from part2 import set_seed
 from part2.model import K, M, SIGMA2, T_ROUNDS, FeedbackCodeSystem
 
+DEFAULT_SEED = 0
+
 
 def get_sigma(step: int, total_steps: int, var_start: float = 0.05, var_end: float = 0.25, frac: float = 0.30) -> float:
     if step >= frac * total_steps:
@@ -46,7 +48,6 @@ def validation_bler(model: FeedbackCodeSystem, device: torch.device, batch: int 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tag", choices=["main", "no_feedback", "T1", "T2", "T3", "no_curriculum"], default="main")
-    parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--steps", type=int)
     parser.add_argument("--batch-size", type=int, default=4096)
     parser.add_argument("--lr", type=float, default=1e-3)
@@ -56,7 +57,7 @@ def main() -> None:
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
 
-    set_seed(args.seed)
+    set_seed(DEFAULT_SEED)
     Path("checkpoints").mkdir(exist_ok=True)
     Path("results").mkdir(exist_ok=True)
     device = torch.device(args.device)
@@ -68,7 +69,7 @@ def main() -> None:
     model = FeedbackCodeSystem(t_rounds=t_rounds, no_feedback=no_feedback).to(device)
     optimizer = AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay, betas=(0.9, 0.98))
     scheduler = LambdaLR(optimizer, lambda step: lr_lambda(step, total_steps, args.warmup))
-    log_path = Path("results") / f"part2_{args.tag}_seed{args.seed}.csv"
+    log_path = Path("results") / f"part2_{args.tag}_train.csv"
     rows = []
 
     model.train()
@@ -93,12 +94,11 @@ def main() -> None:
                 f"sigma={sigma:.3f} lr={lr:.3e} val_BLER={bler:.4f}"
             )
 
-    ckpt_path = Path("checkpoints") / f"part2_{args.tag}_seed{args.seed}.pt"
+    ckpt_path = Path("checkpoints") / f"part2_{args.tag}.pt"
     torch.save(
         {
             "model_state": model.state_dict(),
             "tag": args.tag,
-            "seed": args.seed,
             "t_rounds": t_rounds,
             "no_feedback": no_feedback,
             "steps": total_steps,
