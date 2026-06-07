@@ -17,7 +17,7 @@ TASKS=(
   gru-rolling
 )
 
-for seed in 0 1 2; do
+for seed in 0; do
   for task in "${TASKS[@]}"; do
     python -m part1.train --task "$task" --seed "$seed"
     python -m part1.evaluate --task "$task" --seed "$seed"

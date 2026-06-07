@@ -12,8 +12,6 @@ source .venv/bin/activate
 
 python -c "from part2 import test_power_normalize; test_power_normalize(); print('power_normalize test passed')"
 
-for seed in 0 1 2; do
-  python -m part2.train --tag main --seed "$seed"
-done
+python -m part2.train --tag main --seed 0
 
-python -m part2.evaluate --tag main --seeds 0 1 2 --plot-snr
+python -m part2.evaluate --tag main --seed 0 --plot-snr

@@ -13,9 +13,7 @@ source .venv/bin/activate
 python -c "from part2 import test_power_normalize; test_power_normalize(); print('power_normalize test passed')"
 
 for tag in no_feedback T1 T2 T3 no_curriculum; do
-  for seed in 0 1 2; do
-    python -m part2.train --tag "$tag" --seed "$seed"
-  done
+  python -m part2.train --tag "$tag" --seed 0
 
-  python -m part2.evaluate --tag "$tag" --seeds 0 1 2
+  python -m part2.evaluate --tag "$tag" --seed 0
 done

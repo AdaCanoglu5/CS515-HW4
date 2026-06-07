@@ -27,6 +27,16 @@ TASKS = {
 }
 
 
+def artifact_stem(task: str, seed: int, gamma: float | None = None) -> str:
+    """Stable file stem; turning tasks include gamma to avoid overwrites."""
+    _, _, kind = TASKS[task]
+    stem = f"part1_{task}_seed{seed}"
+    if kind == "turning" and gamma is not None:
+        gamma_tag = str(gamma).replace(".", "p").replace("-", "m")
+        stem = f"{stem}_gamma{gamma_tag}"
+    return stem
+
+
 def build_model(task: str, hidden: int, num_layers: int, dropout: float) -> nn.Module:
     _, model_name, kind = TASKS[task]
     if kind == "regression":
@@ -100,17 +110,25 @@ def main() -> None:
     model = build_model(args.task, args.hidden, args.num_layers, args.dropout).to(device)
     if kind == "turning":
         labels = train_ds.tensors[1]
+        val_labels = val_ds.tensors[1]
         positives = labels.sum().item()
         negatives = labels.numel() - positives
         pos_weight = torch.tensor(negatives / max(positives, 1.0), device=device)
         criterion: nn.Module = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        print(
+            "turning labels "
+            f"gamma={args.gamma} train_pos_frac={positives / max(labels.numel(), 1):.6f} "
+            f"val_pos_frac={val_labels.float().mean().item():.6f} "
+            f"pos_weight={pos_weight.item():.3f}"
+        )
     else:
         criterion = nn.MSELoss()
 
     optimizer = AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = CosineAnnealingLR(optimizer, T_max=args.epochs)
-    ckpt = Path("checkpoints") / f"part1_{args.task}_seed{args.seed}.pt"
-    log_path = Path("results") / f"part1_{args.task}_seed{args.seed}.csv"
+    stem = artifact_stem(args.task, args.seed, args.gamma)
+    ckpt = Path("checkpoints") / f"{stem}.pt"
+    log_path = Path("results") / f"{stem}.csv"
     best_val = float("inf")
     stale = 0
     rows = []

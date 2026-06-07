@@ -19,11 +19,18 @@ from sklearn.metrics import (
 from torch.utils.data import DataLoader
 
 from part1.data import DEFAULT_TICKERS, make_dataset, make_recent_return_baseline
-from part1.train import TASKS, build_model
+from part1.train import TASKS, artifact_stem, build_model
 
 
 def _load_model(args: argparse.Namespace, device: torch.device) -> torch.nn.Module:
-    ckpt_path = Path(args.checkpoint or f"checkpoints/part1_{args.task}_seed{args.seed}.pt")
+    if args.checkpoint:
+        ckpt_path = Path(args.checkpoint)
+    else:
+        stem = artifact_stem(args.task, args.seed, args.gamma)
+        ckpt_path = Path("checkpoints") / f"{stem}.pt"
+        legacy = Path("checkpoints") / f"part1_{args.task}_seed{args.seed}.pt"
+        if not ckpt_path.exists() and legacy.exists():
+            ckpt_path = legacy
     ckpt = torch.load(ckpt_path, map_location=device)
     model = build_model(
         args.task,
@@ -69,6 +76,9 @@ def evaluate_turning(logits: np.ndarray, y: np.ndarray) -> dict[str, float]:
         "recall": float(recall_score(y, pred, zero_division=0)),
         "f1": float(f1_score(y, pred, zero_division=0)),
         "test_positive_fraction": float(np.mean(y)),
+        "predicted_positive_fraction": float(np.mean(pred)),
+        "mean_probability": float(np.mean(prob)),
+        "max_probability": float(np.max(prob)),
         "tn": float(tn),
         "fp": float(fp),
         "fn": float(fn),
@@ -112,7 +122,8 @@ def main() -> None:
             raise ValueError(f"baseline shape {recent.shape} does not match targets {y.shape}")
         metrics = evaluate_regression(pred, y, recent)
 
-    out_path = Path("results") / f"part1_{args.task}_seed{args.seed}_eval.csv"
+    stem = artifact_stem(args.task, args.seed, args.gamma)
+    out_path = Path("results") / f"{stem}_eval.csv"
     with out_path.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=["metric", "value"])
         writer.writeheader()

@@ -94,7 +94,6 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tag", default="main")
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--seeds", type=int, nargs="+")
     parser.add_argument("--n-eval", type=int, default=200_000)
     parser.add_argument("--batch", type=int, default=8192)
     parser.add_argument("--sigma2", type=float, default=SIGMA2)
@@ -104,18 +103,13 @@ def main() -> None:
 
     Path("results").mkdir(exist_ok=True)
     device = torch.device(args.device)
-    seeds = args.seeds or [args.seed]
     all_metrics = []
-    first_model: FeedbackCodeSystem | None = None
 
-    for seed in seeds:
-        ckpt_path = Path("checkpoints") / f"part2_{args.tag}_seed{seed}.pt"
-        model = build_from_checkpoint(ckpt_path, device)
-        if first_model is None:
-            first_model = model
-        metrics = evaluate(model, math.sqrt(args.sigma2), n_eval=args.n_eval, batch=args.batch, device=device)
-        all_metrics.append(metrics)
-        print(f"seed={seed} {metrics}")
+    ckpt_path = Path("checkpoints") / f"part2_{args.tag}_seed{args.seed}.pt"
+    model = build_from_checkpoint(ckpt_path, device)
+    metrics = evaluate(model, math.sqrt(args.sigma2), n_eval=args.n_eval, batch=args.batch, device=device)
+    all_metrics.append(metrics)
+    print(f"seed={args.seed} {metrics}")
 
     summary = summarize(all_metrics)
     out_path = Path("results") / f"part2_{args.tag}.csv"
@@ -126,8 +120,8 @@ def main() -> None:
             writer.writerow({"metric": key, "value": value})
             print(f"{key}: {value}")
 
-    if args.plot_snr and first_model is not None:
-        save_snr_plot(first_model, device, args.n_eval, args.batch)
+    if args.plot_snr:
+        save_snr_plot(model, device, args.n_eval, args.batch)
 
 
 if __name__ == "__main__":
