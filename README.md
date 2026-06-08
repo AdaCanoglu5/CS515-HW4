@@ -58,6 +58,8 @@ Main run at the ablation step budget:
 bash scripts/run_part2_main_30k.sh
 ```
 
+This writes `checkpoints/part2_main_30k.pt` and `results/part2_main_30k*` so it does not overwrite the full main run.
+
 Full main run:
 
 ```bash

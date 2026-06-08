@@ -1,0 +1,13 @@
+/content/CS515-HW4-main/part2/model.py:31: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  return nn.TransformerEncoder(layer, num_layers=N_LAYERS)
+loaded ckpt checkpoints/part2_T3.pt: t_rounds=3 no_feedback=False
+{'bler': 0.899375, 'ser': 0.4362525, 'mean_power': 1.0000000063578287}
+bler: 0.899375
+ser: 0.4362525
+mean_power: 1.0000000063578287
+sigma2=0.05 snr_db=13.01 bler=0.266990
+sigma2=0.10 snr_db=10.00 bler=0.562040
+sigma2=0.15 snr_db=8.24 bler=0.740725
+sigma2=0.25 snr_db=6.02 bler=0.898440
+sigma2=0.35 snr_db=4.56 bler=0.950215
+sigma2=0.50 snr_db=3.01 bler=0.976575

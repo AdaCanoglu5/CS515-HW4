@@ -1,0 +1,7 @@
+checkpoint = checkpoints/part2_main.pt
+mean_power_per_round = [1.0, 0.9999999403953552, 0.9999999403953552, 0.9999998807907104]
+total_param_count_encoder = 77825
+total_param_count_decoder = 76360
+checkpoint_size_mb = 0.613
+max_round_power = 1.000000
+power constraint OK

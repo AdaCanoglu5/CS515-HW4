@@ -1,7 +1,4 @@
 __pycache__/
-*.py[cod]
 .venv/
-data/*.csv
 checkpoints/
-results/
 guide.md

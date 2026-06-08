@@ -1,0 +1,14 @@
+metric,value
+precision,0.0
+recall,0.0
+f1,0.0
+test_positive_fraction,0.0
+predicted_positive_fraction,0.0
+mean_probability,3.316725997137837e-05
+max_probability,0.00010917514737229794
+tn,678.0
+fp,0.0
+fn,0.0
+tp,0.0
+pr_auc,nan
+roc_auc,nan

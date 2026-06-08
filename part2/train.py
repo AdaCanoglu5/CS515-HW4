@@ -47,7 +47,11 @@ def validation_bler(model: FeedbackCodeSystem, device: torch.device, batch: int 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--tag", choices=["main", "no_feedback", "T1", "T2", "T3", "no_curriculum"], default="main")
+    parser.add_argument(
+        "--tag",
+        choices=["main", "main_30k", "no_feedback", "T1", "T2", "T3", "no_curriculum"],
+        default="main",
+    )
     parser.add_argument("--steps", type=int)
     parser.add_argument("--batch-size", type=int, default=4096)
     parser.add_argument("--lr", type=float, default=1e-3)
