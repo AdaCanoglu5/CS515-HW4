@@ -3,13 +3,6 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-if [[ ! -d .venv ]]; then
-  echo "Missing .venv. Run: bash scripts/setup_venv.sh"
-  exit 1
-fi
-
-source .venv/bin/activate
-
 python - <<'PY'
 from part1.data import DEFAULT_END, DEFAULT_START, DEFAULT_TICKERS, download_data
 

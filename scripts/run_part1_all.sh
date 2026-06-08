@@ -3,13 +3,6 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-if [[ ! -d .venv ]]; then
-  echo "Missing .venv. Run: bash scripts/setup_venv.sh"
-  exit 1
-fi
-
-source .venv/bin/activate
-
 TASKS=(
   lstm-reg
   gru-reg
