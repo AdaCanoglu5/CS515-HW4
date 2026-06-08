@@ -52,10 +52,10 @@ bash scripts/run_part1_all.sh
 
 ## Part 2
 
-Short smoke run:
+Main run at the ablation step budget:
 
 ```bash
-bash scripts/run_part2_smoke.sh
+bash scripts/run_part2_main_30k.sh
 ```
 
 Full main run:
